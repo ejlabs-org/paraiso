@@ -43,6 +43,7 @@ from .errors import (
     SpaceNotFoundError,
 )
 from .framework import PIECES, Bucket, Piece, describe
+from .merge import merge_workspaces
 from .models import Area, Capture, Item, Objective
 from .shell import ParaisoShell
 from .store import Store
@@ -62,6 +63,8 @@ __all__ = [
     # core + storage
     "Paraiso",
     "Store",
+    # sync
+    "merge_workspaces",
     # interactive shell
     "ParaisoShell",
     # classification (bring-your-own AI)
