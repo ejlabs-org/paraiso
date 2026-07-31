@@ -164,6 +164,11 @@ paraiso delete <item_id>          # delete an item (deleting an Area id keeps it
 # Data portability
 paraiso export backup.json        # export the active workspace as JSON
 paraiso import export.json --name mine   # import a JSON export (paraiso or a PARA-style app)
+
+# Sync across machines (all workspaces at once)
+paraiso backup all.json           # snapshot every workspace + the active pointer
+paraiso restore all.json          # merge a snapshot into this install
+paraiso sync --path ~/Dropbox/paraiso.json   # two-way sync: pull, merge, push
 ```
 
 **Guided sorting.** `paraiso sort` (or `sort` in the shell) walks the Inbox one
@@ -187,6 +192,18 @@ bucket, plus objectives); `tree` and the Area page clear the screen for a clean
 view. `import` reads either paraiso's own export or a PARA-style app export
 (mapping `module` → bucket, e.g. `seeds` → seed) — Area and Objective links
 survive when the export includes their ids.
+
+**Sync.** `backup`/`restore` move a **whole-install snapshot** (every workspace
+plus which one is active) through a single JSON file you carry however you like.
+`sync` does genuine two-way reconciliation — pull, merge, push — so you can
+capture on either machine and never lose work: adds, edits, and deletes all
+propagate (record-level last-writer-wins, with deletions tracked so they don't
+resurrect). The built-in transport is a plain file (`--path`), so pointing it at
+a synced folder gives you cloud sync with no extra parts; paraiso remembers your
+last `--via`/`--path` so later runs are just `paraiso sync`. External services
+(Dropbox, S3, …) are **opt-in add-on packages** that register a transport under
+the `paraiso.transports` entry point — core itself stays dependency-free and
+never touches the network.
 
 ## Interactive shell
 
@@ -212,8 +229,8 @@ as the one-shot CLI — anything you can script, you can also do interactively.
 
 ## Status
 
-`0.7.0` — early but usable. The public API (models, `Paraiso`, `Store`,
-`Classifier`) is settling; expect additions before `1.0`.
+`0.8.0` — early but usable. The public API (models, `Paraiso`, `Store`,
+`Classifier`, sync) is settling; expect additions before `1.0`.
 
 ## Related
 
