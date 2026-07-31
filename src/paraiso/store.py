@@ -137,6 +137,17 @@ class Store:
         self.set_active(name)
         return self.load(name, classifier=classifier)
 
+    # -- Sync settings -----------------------------------------------------
+
+    def sync_settings(self) -> dict:
+        """Remembered sync transport + path, if any."""
+        return self._read_config().get("sync", {})
+
+    def set_sync_settings(self, settings: dict) -> None:
+        config = self._read_config()
+        config["sync"] = settings
+        self._write_config(config)
+
     def current(self, *, classifier: Optional[Classifier] = None) -> Optional[Paraiso]:
         """Load the active workspace, or ``None`` if none is selected."""
         name = self.active()

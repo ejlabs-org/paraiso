@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 from typing import Optional
 
 from . import framework, interactive, palette, term
@@ -391,6 +392,49 @@ def _cmd_export(args, store: Store) -> int:
     return 0
 
 
+def _cmd_backup(args, store: Store) -> int:
+    import json
+
+    from . import sync as sync_mod
+
+    snapshot = sync_mod.build_snapshot(store)
+    Path(args.file).write_text(
+        json.dumps(snapshot, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    n = len(snapshot["workspaces"])
+    print(f"Backed up {n} workspace(s) to {args.file}.")
+    return 0
+
+
+def _cmd_restore(args, store: Store) -> int:
+    import json
+
+    from . import sync as sync_mod
+
+    try:
+        snapshot = json.loads(Path(args.file).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise ParaisoError(f"Couldn't read {args.file!r}: {exc}") from exc
+    if snapshot.get("paraiso_snapshot") is None:
+        raise ParaisoError(f"{args.file!r} is not a paraiso snapshot.")
+    report = sync_mod.apply_snapshot(store, snapshot)
+    print(report)
+    return 0
+
+
+def _cmd_sync(args, store: Store) -> int:
+    from . import sync as sync_mod
+
+    settings = store.sync_settings()
+    name = args.via or settings.get("transport") or "filesystem"
+    path = args.path or settings.get("path")
+    transport = sync_mod.resolve_transport(name, path=path)
+    report = sync_mod.sync(store, transport)
+    store.set_sync_settings({"transport": name, "path": path})
+    print(report)
+    return 0
+
+
 def _cmd_shell(args, store: Store) -> int:
     from .shell import ParaisoShell
 
@@ -417,7 +461,7 @@ _EPILOG = """commands, by category:
   sort         sort  file  move  delete
   browse       tree  show  projects  resources  seeds  archive
   organize     area  objective       (bare = list; `add`/`show`/`edit` too)
-  data         import  export
+  data         import  export  backup  restore  sync
   info         framework  shell
 """
 
@@ -524,6 +568,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_export = sub.add_parser("export", help="export the active workspace as JSON")
     p_export.add_argument("file", nargs="?", help="output path (prints to stdout if omitted)")
     p_export.set_defaults(func=_cmd_export)
+
+    p_backup = sub.add_parser("backup", help="write a snapshot of all workspaces to a file")
+    p_backup.add_argument("file")
+    p_backup.set_defaults(func=_cmd_backup)
+
+    p_restore = sub.add_parser("restore", help="merge a snapshot file into this install")
+    p_restore.add_argument("file")
+    p_restore.set_defaults(func=_cmd_restore)
+
+    p_sync = sub.add_parser("sync", help="two-way sync via a transport (pull, merge, push)")
+    p_sync.add_argument("--via", help="transport name (default: filesystem, or your last choice)")
+    p_sync.add_argument("--path", help="snapshot file for the filesystem transport")
+    p_sync.set_defaults(func=_cmd_sync)
 
     sub.add_parser("shell", help="start the interactive shell").set_defaults(func=_cmd_shell)
 

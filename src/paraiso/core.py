@@ -51,6 +51,7 @@ class Paraiso:
         self._items: dict[str, Item] = {}
         self._areas: dict[str, Area] = {}
         self._objectives: dict[str, Objective] = {}
+        self._tombstones: dict[str, str] = {}
         self.created_at = now()
         self.updated_at = now()
 
@@ -92,6 +93,7 @@ class Paraiso:
         """Throw a capture away without filing it."""
         c = self._resolve_capture(capture)
         del self._captures[c.id]
+        self._tombstone(c.id)
         self._touch()
 
     # -- Filing (the user decides) ----------------------------------------
@@ -124,6 +126,7 @@ class Paraiso:
         )
         c.processed = True
         c.item_id = item.id
+        c.updated_at = now()
         self._touch()
         return item
 
@@ -202,6 +205,8 @@ class Paraiso:
         for capture in self._captures.values():
             if capture.item_id == it.id:
                 capture.item_id = None  # its lineage pointer now dangles; clear it
+                capture.updated_at = now()
+        self._tombstone(it.id)
         self._touch()
 
     def delete_area(self, area: AreaRef) -> None:
@@ -215,9 +220,12 @@ class Paraiso:
         for it in self._items.values():
             if it.area_id == aid:
                 it.area_id = None
+                it.updated_at = now()
         for obj in self._objectives.values():
             if obj.area_id == aid:
                 obj.area_id = None
+                obj.updated_at = now()
+        self._tombstone(aid)
         self._touch()
 
     # -- Areas & Objectives (human-created) --------------------------------
@@ -258,6 +266,7 @@ class Paraiso:
             a.color = color
         if tags is not None:
             a.tags = list(tags)
+        a.updated_at = now()
         self._touch()
         return a
 
@@ -309,6 +318,11 @@ class Paraiso:
     @property
     def objectives(self) -> list[Objective]:
         return list(self._objectives.values())
+
+    @property
+    def tombstones(self) -> dict[str, str]:
+        """Ids of deleted records → ISO deletion timestamp (for sync)."""
+        return dict(self._tombstones)
 
     def items_in(self, bucket: Union[Bucket, str]) -> list[Item]:
         target = Bucket.coerce(bucket)
@@ -366,6 +380,7 @@ class Paraiso:
             "items": [i.to_dict() for i in self._items.values()],
             "areas": [a.to_dict() for a in self._areas.values()],
             "objectives": [o.to_dict() for o in self._objectives.values()],
+            "tombstones": dict(self._tombstones),
         }
 
     @classmethod
@@ -381,12 +396,16 @@ class Paraiso:
         p._objectives = {
             o["id"]: Objective.from_dict(o) for o in data.get("objectives", [])
         }
+        p._tombstones = dict(data.get("tombstones", {}))
         return p
 
     # -- Internals ---------------------------------------------------------
 
     def _touch(self) -> None:
         self.updated_at = now()
+
+    def _tombstone(self, entity_id: str) -> None:
+        self._tombstones[entity_id] = to_iso(now())
 
     def _resolve_capture(self, ref: CaptureRef) -> Capture:
         cid = ref.id if isinstance(ref, Capture) else ref

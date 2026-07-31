@@ -55,3 +55,6 @@ Thumbs.db
 
 # Local AI-assistant context (not published)
 CLAUDE.md
+
+# Local design/spec docs (not published)
+docs/

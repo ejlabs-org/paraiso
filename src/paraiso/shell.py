@@ -33,7 +33,7 @@ _HELP_CATEGORIES = (
     ("Sort", ("sort", "file", "move", "delete")),
     ("Browse", ("tree", "show", "projects", "resources", "seeds", "archive")),
     ("Organize", ("area", "objective")),
-    ("Data", ("import", "export")),
+    ("Data", ("import", "export", "backup", "restore", "sync")),
     ("Info", ("framework", "help", "quit")),
 )
 
@@ -225,6 +225,18 @@ class ParaisoShell(cmd.Cmd):
     def do_export(self, arg: str) -> None:
         "export [FILE] — export the active workspace as JSON (stdout if no file)."
         self._dispatch("export", arg)
+
+    def do_backup(self, arg: str) -> None:
+        "backup FILE — write a snapshot of all workspaces to a file."
+        self._dispatch("backup", arg)
+
+    def do_restore(self, arg: str) -> None:
+        "restore FILE — merge a snapshot file into this install."
+        self._dispatch("restore", arg)
+
+    def do_sync(self, arg: str) -> None:
+        "sync [--via NAME --path FILE] — two-way sync (pull, merge, push)."
+        self._dispatch("sync", arg)
 
     def do_clear(self, arg: str) -> None:
         "Clear the screen."

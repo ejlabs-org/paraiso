@@ -31,6 +31,7 @@ class Capture:
     processed: bool = False
     item_id: Optional[str] = None  # the Item this capture became, if filed
     created_at: datetime = field(default_factory=now)
+    updated_at: datetime = field(default_factory=now)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -41,10 +42,12 @@ class Capture:
             "processed": self.processed,
             "item_id": self.item_id,
             "created_at": to_iso(self.created_at),
+            "updated_at": to_iso(self.updated_at),
         }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Capture":
+        created = from_iso(data.get("created_at")) or now()
         return cls(
             text=data["text"],
             id=data["id"],
@@ -52,7 +55,8 @@ class Capture:
             note=data.get("note", ""),
             processed=data.get("processed", False),
             item_id=data.get("item_id"),
-            created_at=from_iso(data.get("created_at")) or now(),
+            created_at=created,
+            updated_at=from_iso(data.get("updated_at")) or created,
         )
 
 
@@ -125,6 +129,7 @@ class Area:
     color: str = palette.DEFAULT_ACCENT
     tags: list[str] = field(default_factory=list)
     created_at: datetime = field(default_factory=now)
+    updated_at: datetime = field(default_factory=now)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -134,17 +139,20 @@ class Area:
             "color": self.color,
             "tags": list(self.tags),
             "created_at": to_iso(self.created_at),
+            "updated_at": to_iso(self.updated_at),
         }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Area":
+        created = from_iso(data.get("created_at")) or now()
         return cls(
             name=data["name"],
             id=data["id"],
             description=data.get("description", ""),
             color=data.get("color", palette.DEFAULT_ACCENT),
             tags=list(data.get("tags", [])),
-            created_at=from_iso(data.get("created_at")) or now(),
+            created_at=created,
+            updated_at=from_iso(data.get("updated_at")) or created,
         )
 
 
@@ -158,6 +166,7 @@ class Objective:
     area_id: Optional[str] = None
     status: str = "active"  # active | completed | archived
     created_at: datetime = field(default_factory=now)
+    updated_at: datetime = field(default_factory=now)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -167,15 +176,18 @@ class Objective:
             "area_id": self.area_id,
             "status": self.status,
             "created_at": to_iso(self.created_at),
+            "updated_at": to_iso(self.updated_at),
         }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Objective":
+        created = from_iso(data.get("created_at")) or now()
         return cls(
             title=data["title"],
             id=data["id"],
             description=data.get("description", ""),
             area_id=data.get("area_id"),
             status=data.get("status", "active"),
-            created_at=from_iso(data.get("created_at")) or now(),
+            created_at=created,
+            updated_at=from_iso(data.get("updated_at")) or created,
         )
