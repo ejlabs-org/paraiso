@@ -131,3 +131,34 @@ def sync(store: Store, transport: Transport) -> MergeReport:
     report = apply_snapshot(store, remote) if remote else MergeReport()
     transport.push(build_snapshot(store))
     return report
+
+
+def _transport_entry_points():
+    """Installed transports advertised under the ``paraiso.transports`` group."""
+    from importlib.metadata import entry_points
+
+    eps = entry_points()
+    if hasattr(eps, "select"):  # Python 3.10+
+        return list(eps.select(group="paraiso.transports"))
+    return list(eps.get("paraiso.transports", []))  # Python 3.9
+
+
+def resolve_transport(name: str, *, path: Optional[str] = None) -> Transport:
+    """Turn a transport name into a live :class:`Transport`.
+
+    ``filesystem`` is built in; any other name must be provided by an installed
+    add-on package registered under the ``paraiso.transports`` entry point.
+    """
+    from .errors import ParaisoError
+
+    if name == "filesystem":
+        if not path:
+            raise ParaisoError("The filesystem transport needs a path (--path).")
+        return FilesystemTransport(path)
+    for ep in _transport_entry_points():
+        if ep.name == name:
+            return ep.load()()
+    raise ParaisoError(
+        f"Unknown sync transport {name!r}. Install an add-on that provides it, "
+        f"or use --via filesystem --path <file>."
+    )

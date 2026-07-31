@@ -47,13 +47,15 @@ from .merge import merge_workspaces
 from .models import Area, Capture, Item, Objective
 from .shell import ParaisoShell
 from .store import Store
+# NB: import names from .sync but NOT the `sync` function itself — binding a
+# top-level name `sync` would shadow the `paraiso.sync` submodule. The
+# orchestrator stays reachable as `paraiso.sync.sync`.
 from .sync import (
     FilesystemTransport,
     MergeReport,
     Transport,
     apply_snapshot,
     build_snapshot,
-    sync,
 )
 
 __all__ = [
@@ -75,7 +77,6 @@ __all__ = [
     "merge_workspaces",
     "build_snapshot",
     "apply_snapshot",
-    "sync",
     "Transport",
     "FilesystemTransport",
     "MergeReport",
