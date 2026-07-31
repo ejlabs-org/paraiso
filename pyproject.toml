@@ -1,0 +1,54 @@
+[build-system]
+# Pinned below 77 so the build emits classic Metadata 2.2 (no PEP 639
+# License-Expression/License-File fields that older twine can't upload).
+requires = ["setuptools>=68,<77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "paraiso"
+version = "0.7.0"
+description = "An open, dependency-free foundation for the PARAISO organization framework."
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "EJ Labs" }]
+keywords = [
+  "paraiso",
+  "para",
+  "para-method",
+  "organization",
+  "personal-knowledge-management",
+  "capture",
+  "cli",
+  "productivity",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: MIT License",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Office/Business",
+  "Topic :: Text Processing",
+]
+
+[project.urls]
+Homepage = "https://github.com/ejlabs-org/paraiso"
+Repository = "https://github.com/ejlabs-org/paraiso"
+Issues = "https://github.com/ejlabs-org/paraiso/issues"
+
+[project.scripts]
+paraiso = "paraiso.cli:main"
+
+[tool.setuptools]
+# Don't advertise a License-File (Metadata 2.4 field); MIT is declared via the
+# classifier instead, which every twine understands.
+license-files = []
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
