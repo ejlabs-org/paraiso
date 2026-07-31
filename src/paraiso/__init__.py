@@ -47,6 +47,14 @@ from .merge import merge_workspaces
 from .models import Area, Capture, Item, Objective
 from .shell import ParaisoShell
 from .store import Store
+from .sync import (
+    FilesystemTransport,
+    MergeReport,
+    Transport,
+    apply_snapshot,
+    build_snapshot,
+    sync,
+)
 
 __all__ = [
     "__version__",
@@ -65,6 +73,12 @@ __all__ = [
     "Store",
     # sync
     "merge_workspaces",
+    "build_snapshot",
+    "apply_snapshot",
+    "sync",
+    "Transport",
+    "FilesystemTransport",
+    "MergeReport",
     # interactive shell
     "ParaisoShell",
     # classification (bring-your-own AI)
