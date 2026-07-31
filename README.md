@@ -30,6 +30,19 @@ other tools can build on. Two principles are baked in:
 2. **AI is bring-your-own.** Classification is an optional seam you implement
    yourself — the core needs no model, no network, and no dependencies.
 
+**At a glance:**
+
+- **Zero dependencies.** Standard library only, Python 3.9+.
+- **Three front doors, one core.** An importable [library](#library), a one-shot
+  [CLI](#command-line), and an interactive [shell](#interactive-shell) — same
+  operations, your choice of surface.
+- **Multiple workspaces.** Keep `work` and `personal` side by side, stored as
+  plain JSON.
+- **[Sync across machines](#sync-across-machines).** Two-way merge — new items,
+  edits, *and* deletions all propagate — with no cloud lock-in.
+- **Bring-your-own AI.** An optional classifier seam; the core never calls a
+  model.
+
 ## Install
 
 ```bash
@@ -109,6 +122,42 @@ store.spaces()                  # ['work']
 store.use("personal")           # switch active workspace
 ```
 
+## Sync across machines
+
+Capture on either computer without worrying about it. `sync` reconciles two
+installs both ways — new items, edits, **and** deletions all propagate
+(record-level last-writer-wins, with deletions tracked so they never come back).
+
+From the CLI:
+
+```bash
+paraiso backup all.json                        # snapshot every workspace to a file
+paraiso restore all.json                       # merge a snapshot into this install
+paraiso sync --path ~/Dropbox/paraiso.json     # two-way: pull, merge, push
+```
+
+Or from the library:
+
+```python
+from pathlib import Path
+
+from paraiso import Store
+from paraiso.sync import FilesystemTransport, sync
+
+store = Store()
+report = sync(store, FilesystemTransport(Path.home() / "Dropbox/paraiso.json"))
+print(report)                                  # what merged, per workspace
+```
+
+The built-in transport is a single JSON file, so pointing `--path` at a synced
+folder (Dropbox, iCloud, Drive) gives you cloud sync with no extra parts —
+paraiso remembers your last `--via`/`--path`, so later runs are just
+`paraiso sync`. External services (a real Dropbox or S3 client, LAN transfer)
+are **opt-in add-on packages** that register a transport under the
+`paraiso.transports` entry point — the core stays dependency-free and never
+touches the network. The pure `merge_workspaces()` primitive is exported too, if
+you'd rather build your own flow on top.
+
 ## Bring your own AI
 
 `Classifier` is the extension point. The default `ManualClassifier` suggests
@@ -161,14 +210,13 @@ paraiso sort                      # guided: press one key per capture to file it
 paraiso move <item_id> project    # reclassify a filed item (add --area to re-home it)
 paraiso delete <item_id>          # delete an item (deleting an Area id keeps its items)
 
-# Data portability
+# Data portability (single workspace)
 paraiso export backup.json        # export the active workspace as JSON
 paraiso import export.json --name mine   # import a JSON export (paraiso or a PARA-style app)
 
-# Sync across machines (all workspaces at once)
-paraiso backup all.json           # snapshot every workspace + the active pointer
-paraiso restore all.json          # merge a snapshot into this install
-paraiso sync --path ~/Dropbox/paraiso.json   # two-way sync: pull, merge, push
+# Sync all workspaces across machines — see "Sync across machines" above
+paraiso backup all.json
+paraiso sync --path ~/Dropbox/paraiso.json
 ```
 
 **Guided sorting.** `paraiso sort` (or `sort` in the shell) walks the Inbox one
@@ -193,18 +241,6 @@ view. `import` reads either paraiso's own export or a PARA-style app export
 (mapping `module` → bucket, e.g. `seeds` → seed) — Area and Objective links
 survive when the export includes their ids.
 
-**Sync.** `backup`/`restore` move a **whole-install snapshot** (every workspace
-plus which one is active) through a single JSON file you carry however you like.
-`sync` does genuine two-way reconciliation — pull, merge, push — so you can
-capture on either machine and never lose work: adds, edits, and deletes all
-propagate (record-level last-writer-wins, with deletions tracked so they don't
-resurrect). The built-in transport is a plain file (`--path`), so pointing it at
-a synced folder gives you cloud sync with no extra parts; paraiso remembers your
-last `--via`/`--path` so later runs are just `paraiso sync`. External services
-(Dropbox, S3, …) are **opt-in add-on packages** that register a transport under
-the `paraiso.transports` entry point — core itself stays dependency-free and
-never touches the network.
-
 ## Interactive shell
 
 Run `paraiso` with no arguments (or `paraiso shell`) to drop into a REPL with
@@ -224,8 +260,9 @@ paraiso (personal) › sort                          # guided: one keypress per 
 
 The prompt is colored per workspace (each name gets a stable palette color), and
 `help` lists commands grouped by category (Workspaces, Capture, Sort, Browse,
-Organize, Info); `help <command>` explains one. It runs the exact same commands
-as the one-shot CLI — anything you can script, you can also do interactively.
+Organize, Data, Info); `help <command>` explains one. It runs the exact same
+commands as the one-shot CLI — including `sync` — so anything you can script,
+you can also do interactively.
 
 ## Status
 
