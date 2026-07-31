@@ -220,4 +220,4 @@ as the one-shot CLI — anything you can script, you can also do interactively.
 `paraiso` is framework-first and app-agnostic. If you'd like PARAISO as a calm,
 full app — with AI that suggests where each capture belongs — see
 [Chiefly](https://chiefly.io), a calm AI "Chief of Mind" built on the same
-framework, by the same team ([EJ Labs](https://chiefly.io)).
+framework, by the same team ([EJ Labs](https://ejlabs.io)).
