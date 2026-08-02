@@ -193,6 +193,32 @@ def pick_area(current: Paraiso, color: bool, title: str) -> Optional[Area]:
     return None
 
 
+def pick_area_or_all(current: Paraiso, color: bool, title: str) -> Optional[str]:
+    """Pick an Area to filter by. Returns an area id, or ``None`` for "all areas"
+    (also the result of cancelling). Single-keypress when there are ≤9 Areas."""
+    areas = current.areas
+    if not areas:
+        print("No Areas yet.")
+        return None
+    print(title)
+    print("    0) all areas")
+    for i, area in enumerate(areas, 1):
+        count = len(current.items_for_area(area))
+        print(f"    {i}) {term.swatch(area.color, enabled=color)} {area.name}  {term.dim(f'({count})', enabled=color)}")
+    print("  " + term.dim("[0] all  [Esc] cancel", enabled=color))
+    if len(areas) <= 9:
+        while True:
+            key = read_key("  › ")
+            if key in ("esc", "", "0"):
+                return None
+            if key.isdigit() and 1 <= int(key) <= len(areas):
+                return areas[int(key) - 1].id
+    choice = input("  › ").strip()
+    if choice.isdigit() and 1 <= int(choice) <= len(areas):
+        return areas[int(choice) - 1].id
+    return None
+
+
 def choose_palette_color(color: bool, *, current_hex: Optional[str] = None) -> Optional[str]:
     """Pick one of the predefined Area colors (never a free-form hex)."""
     print("  color:")

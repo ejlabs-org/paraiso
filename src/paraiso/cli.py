@@ -31,6 +31,10 @@ from .store import Store
 from .util import short_id
 
 
+# Sentinel: `-a` given with no value means "prompt me for an Area".
+_PROMPT_AREA = "\x00prompt-area"
+
+
 def _tags(value: Optional[str]) -> list[str]:
     return [t.strip() for t in (value or "").split(",") if t.strip()]
 
@@ -251,6 +255,13 @@ def _cmd_items(args, store: Store) -> int:
     bucket = getattr(args, "bucket", None)
     area = getattr(args, "area", None)
     objective = getattr(args, "objective", None)
+
+    # Bare `-a` → prompt for an Area (or "all"); a value → resolve id/prefix.
+    if area == _PROMPT_AREA:
+        label = Bucket.coerce(bucket).label if bucket else "items"
+        area = interactive.pick_area_or_all(current, color, f"Show {label} in which Area?")
+    if area:
+        area = current.get_area(area).id  # resolve id/prefix (raises if unknown)
 
     items = current.items
     if bucket:
@@ -531,16 +542,20 @@ def build_parser() -> argparse.ArgumentParser:
     obj_sub.add_parser("list")
     p_obj.set_defaults(func=_cmd_objective, objective_action="list")
 
-    # Per-bucket browse shortcuts (the PARAISO pages).
+    # Per-bucket browse shortcuts (the PARAISO pages). `-a` filters by Area:
+    # bare `-a` prompts a picker; `-a <id-or-prefix>` filters directly.
     for _slug, _bucket in (
         ("projects", "project"),
         ("resources", "resource"),
         ("seeds", "seed"),
         ("archive", "archive"),
     ):
-        sub.add_parser(_slug, help=f"list items in {_bucket.title()}").set_defaults(
-            func=_cmd_items, bucket=_bucket, area=None, objective=None
+        p_bucket = sub.add_parser(_slug, help=f"list items in {_bucket.title()} (-a filters by Area)")
+        p_bucket.add_argument(
+            "-a", "--area", nargs="?", const=_PROMPT_AREA, default=None,
+            help="area id/prefix to filter by, or bare -a to pick one",
         )
+        p_bucket.set_defaults(func=_cmd_items, bucket=_bucket, objective=None)
 
     sub.add_parser("show", help="quick counts for the active workspace").set_defaults(func=_cmd_show)
     sub.add_parser("tree", help="colorful overview of everything").set_defaults(func=_cmd_tree)
