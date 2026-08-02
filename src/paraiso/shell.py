@@ -255,6 +255,8 @@ class ParaisoShell(cmd.Cmd):
 
     def do_help(self, arg: str) -> None:
         "help [command] — list commands by category, or explain one."
+        if sys.stdout.isatty():
+            self.stdout.write("\033[2J\033[H")  # clear for a clean help page
         if arg:
             super().do_help(arg)
             return

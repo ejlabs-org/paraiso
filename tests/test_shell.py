@@ -40,6 +40,29 @@ def test_welcome_banner_shows_wordmark_and_status(shell):
     assert "workspace" in shell._welcome_banner()
 
 
+def test_help_clears_screen_on_a_tty(shell, monkeypatch):
+    import io
+
+    buf = io.StringIO()
+    shell.stdout = buf
+    monkeypatch.setattr("sys.stdout.isatty", lambda: True)
+    shell.onecmd("help")
+    out = buf.getvalue()
+    assert "\033[2J" in out          # screen cleared
+    assert "Workspaces" in out       # then the categorized help
+
+
+def test_help_does_not_clear_when_not_a_tty(shell):
+    import io
+
+    buf = io.StringIO()
+    shell.stdout = buf
+    shell.onecmd("help")
+    out = buf.getvalue()
+    assert "\033[2J" not in out      # piped/CI: no escape codes
+    assert "Workspaces" in out
+
+
 def test_quit_returns_true(shell):
     assert shell.onecmd("quit") is True
     assert shell.onecmd("EOF") is True
