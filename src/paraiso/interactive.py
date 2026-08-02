@@ -11,6 +11,7 @@ and titles are read as lines so they work anywhere, including when stdin is pipe
 
 from __future__ import annotations
 
+import select
 import sys
 from typing import Optional
 
@@ -32,6 +33,9 @@ _BUCKET_KEYS = {"p": "project", "r": "resource", "s": "seed", "a": "archive"}
 # Sentinel returned by the pickers when the user chooses to leave a value as-is.
 KEEP = object()
 
+# Sentinel returned when the user presses Esc to cancel the current step/flow.
+CANCEL = object()
+
 
 def read_key(prompt: str = "") -> str:
     """Read a single keypress (lower-cased). Falls back to a line off stdin when
@@ -41,18 +45,34 @@ def read_key(prompt: str = "") -> str:
         sys.stdout.flush()
     if not (_HAS_TERMIOS and sys.stdin.isatty()):
         line = sys.stdin.readline()
-        return line.strip()[:1].lower()
+        return _normalize_key(line.strip()[:1])
     fd = sys.stdin.fileno()
     old = termios.tcgetattr(fd)
     try:
         tty.setraw(fd)
         ch = sys.stdin.read(1)
+        # Esc alone vs. an arrow/nav escape sequence: if more bytes are waiting,
+        # it's a sequence — drain them so they aren't read as a bare Esc.
+        seq = _drain(fd) if ch == "\x1b" else ""
     finally:
         termios.tcsetattr(fd, termios.TCSADRAIN, old)
+    if seq:  # an escape sequence (arrow, etc.) — not a key any flow acts on
+        sys.stdout.write("\n")
+        sys.stdout.flush()
+        return (ch + seq).lower()
     key = _normalize_key(ch)  # may raise KeyboardInterrupt
-    sys.stdout.write("\n" if key == "" else ch + "\n")
+    sys.stdout.write("\n" if key in ("", "esc") else ch + "\n")
     sys.stdout.flush()
     return key
+
+
+def _drain(fd) -> str:
+    """Read any bytes already waiting on ``fd`` without blocking (used to slurp
+    the tail of an escape sequence right after an initial ``\\x1b``)."""
+    out = ""
+    while select.select([fd], [], [], 0)[0]:
+        out += sys.stdin.read(1)
+    return out
 
 
 def _normalize_key(ch: str) -> str:
@@ -65,6 +85,8 @@ def _normalize_key(ch: str) -> str:
         raise KeyboardInterrupt
     if ch in ("\r", "\n", ""):  # Enter (or EOF)
         return ""
+    if ch == "\x1b":  # Escape — cancel the current step/flow
+        return "esc"
     return ch.lower()
 
 
@@ -81,29 +103,20 @@ def confirm(prompt: str, assume_yes: bool = False) -> bool:
 # -- pickers ---------------------------------------------------------------
 
 
-def choose_bucket(color: bool, *, actions: bool = False, allow_keep: bool = False):
-    """Single-key bucket picker. Returns a bucket value, or ``None`` to cancel.
-
-    With ``actions=True`` the caller also handles ``k``/``d`` (skip/discard);
-    with ``allow_keep=True`` an empty keypress returns :data:`KEEP` (leave the
-    bucket unchanged).
-    """
+def choose_bucket(color: bool, *, allow_keep: bool = False):
+    """Single-key bucket picker. Returns a bucket value, :data:`CANCEL` on Esc/``q``,
+    or (when ``allow_keep``) :data:`KEEP` on Enter (leave the bucket unchanged)."""
     hint = "[p] project  [r] resource  [s] seed  [a] archive"
-    if actions:
-        hint += "   [k] skip  [d] discard  [q] quit"
-    elif allow_keep:
-        hint += "   [Enter] keep  [q] cancel"
-    else:
-        hint += "   [q] cancel"
+    hint += "   [Enter] keep  [Esc] cancel" if allow_keep else "   [Esc] cancel"
     print("  " + term.dim(hint, enabled=color))
     while True:
         key = read_key("  bucket › ")
-        if key == "q":
-            return None
+        if key in ("q", "esc"):
+            return CANCEL
         if key == "":
-            return KEEP if allow_keep else None
-        if actions and key in ("k", "d"):
-            return key
+            if allow_keep:
+                return KEEP
+            continue  # a bucket is required here — ignore a stray Enter
         if key in _BUCKET_KEYS:
             return _BUCKET_KEYS[key]
 
@@ -129,14 +142,36 @@ def choose_area(
     for i, area in enumerate(areas, 1):
         print(f"    {i}) {term.swatch(area.color, enabled=color)} {area.name}")
     print("    n) new area")
+    keep_hint = "[k] keep  " if allow_keep else ""
+    print("  " + term.dim(f"{keep_hint}[0] none  [n] new  [Esc] cancel", enabled=color))
+
+    def _new_area():
+        name = input("  new area name › ").strip()
+        return current.create_area(name).id if name else None
+
+    # ≤9 areas fit single-key selection (Esc-cancellable); more need typed input.
+    if len(areas) <= 9:
+        while True:
+            key = read_key("  area › ")
+            if key == "esc":
+                return CANCEL
+            if allow_keep and key == "k":
+                return KEEP
+            if key in ("", "0"):
+                return KEEP if (allow_keep and key == "") else None
+            if key == "n":
+                return _new_area()
+            if key.isdigit() and 1 <= int(key) <= len(areas):
+                return areas[int(key) - 1].id
     choice = input("  area › ").strip().lower()
+    if choice in ("q", "esc"):
+        return CANCEL
     if allow_keep and choice in ("", "k"):
         return KEEP
     if choice in ("", "0"):
         return None
     if choice == "n":
-        name = input("  new area name › ").strip()
-        return current.create_area(name).id if name else None
+        return _new_area()
     if choice.isdigit() and 1 <= int(choice) <= len(areas):
         return areas[int(choice) - 1].id
     return None
@@ -186,18 +221,52 @@ def pick_item(current: Paraiso, color: bool, title: str) -> Optional[Item]:
     return None
 
 
-def _title_for(capture_text: str) -> str:
+def confirm_title(capture_text: str, color: bool):
+    """Confirm an item's title with a single keypress. Enter keeps the default
+    (the capture's first line), ``e`` opens typed editing, Esc returns
+    :data:`CANCEL`. Returns the chosen title string, or :data:`CANCEL`."""
     default = capture_text.splitlines()[0][:120]
-    typed = input(f"  title [{default}] › ").strip()
-    return typed or default
+    print("  " + term.dim(f"title [{default}]   [Enter] keep · [e] edit · [Esc] cancel", enabled=color))
+    while True:
+        key = read_key("  › ")
+        if key in ("q", "esc"):
+            return CANCEL
+        if key == "":
+            return default
+        if key == "e":
+            typed = input("  title › ").strip()
+            return typed or default
+
+
+def _action_bar(color: bool) -> str:
+    """The per-capture control line in triage. Returns 'file' / 'skip' /
+    'discard' / 'quit'."""
+    print("  " + term.dim("[Enter] file   [s] skip   [d] discard   [Esc] quit", enabled=color))
+    while True:
+        key = read_key("  › ")
+        if key in ("q", "esc"):
+            return "quit"
+        if key == "":
+            return "file"
+        if key == "s":
+            return "skip"
+        if key == "d":
+            return "discard"
+
+
+def _clear_if_tty() -> None:
+    if sys.stdout.isatty():
+        sys.stdout.write("\033[2J\033[H")
 
 
 # -- flows -----------------------------------------------------------------
 
 
 def triage(store: Store, *, color: Optional[bool] = None) -> int:
-    """Walk the Inbox one capture at a time: press a key for the bucket, pick an
-    Area, confirm the title. The fast way to empty an Inbox."""
+    """Walk the Inbox one capture at a time: confirm the title, pick an Area,
+    choose a bucket. Every step is a keypress; Esc backs out (of the capture
+    mid-filing, or of the whole flow at the action bar). The fast, calm way to
+    empty an Inbox."""
     current = store.current()
     if current is None:
         print("No active workspace. Create one with `new <name>`.")
@@ -208,29 +277,46 @@ def triage(store: Store, *, color: Optional[bool] = None) -> int:
         print("Inbox is empty. Nothing to sort.")
         return 0
 
-    print(f"Sorting {len(inbox)} capture(s).\n")
+    _clear_if_tty()
+    total = len(inbox)
     filed = 0
     try:
-        for capture in inbox:
+        for idx, capture in enumerate(inbox, 1):
+            print(term.dim(f"Sorting {idx}/{total}", enabled=color))
             print(term.paint(f"• {capture.text}", palette.DEFAULT_ACCENT, bold=True, enabled=color))
-            choice = choose_bucket(color, actions=True)
-            if choice is None:  # quit
-                print("Stopped.")
+
+            action = _action_bar(color)
+            if action == "quit":
                 break
-            if choice == "k":  # skip
-                print("  skipped\n")
+            if action == "skip":
+                print(term.dim("  skipped\n", enabled=color))
                 continue
-            if choice == "d":  # discard
+            if action == "discard":
                 current.discard(capture)
                 store.save(current)
-                print("  discarded\n")
+                print(term.dim("  discarded\n", enabled=color))
+                continue
+
+            title = confirm_title(capture.text, color)
+            if title is CANCEL:
+                print(term.dim("  skipped\n", enabled=color))
                 continue
             area = choose_area(current, color)
-            title = _title_for(capture.text)
-            item = current.file(capture, choice, title=title, area=area)
+            if area is CANCEL:
+                print(term.dim("  skipped\n", enabled=color))
+                continue
+            bucket = choose_bucket(color)
+            if bucket is CANCEL:
+                print(term.dim("  skipped\n", enabled=color))
+                continue
+
+            item = current.file(capture, bucket, title=title, area=area)
             store.save(current)
             filed += 1
-            print(term.paint(f"  → {item.bucket.label}\n", palette.BUCKET_COLORS[choice], enabled=color))
+            dest = item.bucket.label + (
+                f" · {current.get_area(item.area_id).name}" if item.area_id else ""
+            )
+            print(term.paint(f"  → {dest}\n", palette.BUCKET_COLORS[bucket], enabled=color))
     except KeyboardInterrupt:
         print("\nStopped.")
 
@@ -258,13 +344,16 @@ def move_flow(store: Store, *, color: Optional[bool] = None) -> int:
     print("  " + term.dim(f"currently: {now}", enabled=color))
 
     bucket = choose_bucket(color, allow_keep=True)
-    if bucket is None:
+    if bucket is CANCEL:
         print("Cancelled.")
         return 0
     if bucket is not KEEP:
         current.move(item, bucket)
 
     area_choice = choose_area(current, color, allow_keep=True, current_area_id=item.area_id)
+    if area_choice is CANCEL:
+        print("Cancelled.")
+        return 0
     if area_choice is not KEEP:
         current.set_item_area(item, area_choice)
 
@@ -293,9 +382,9 @@ def edit_area_flow(store: Store, *, color: Optional[bool] = None, area_id: Optio
             f"\n  {term.swatch(area.color, enabled=color)} "
             f"{term.paint(area.name, area.color, bold=True, enabled=color)}{tags}"
         )
-        print("  " + term.dim("[n] rename   [c] color   [t] tags   [Enter] done", enabled=color))
+        print("  " + term.dim("[n] rename   [c] color   [t] tags   [Enter] done   [Esc] cancel", enabled=color))
         key = read_key("  edit › ")
-        if key in ("", "q"):
+        if key in ("", "q", "esc"):
             break
         if key == "n":
             name = input("  new name › ").strip()
