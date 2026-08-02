@@ -28,6 +28,7 @@ from .errors import ParaisoError
 from .framework import Bucket
 from .models import Area, Item
 from .store import Store
+from .util import short_id
 
 
 def _tags(value: Optional[str]) -> list[str]:
@@ -54,7 +55,7 @@ def _fmt_item(item: Item, amap: dict[str, Area], color: bool, *, dot: bool = Tru
     parts = []
     if dot:
         parts.append(term.paint("●", palette.BUCKET_COLORS[item.bucket.value], enabled=color))
-    parts.append(term.dim(item.id, enabled=color))
+    parts.append(term.dim(short_id(item.id), enabled=color))
     parts.append(item.title)
     area = amap.get(item.area_id) if item.area_id else None
     if area is not None:
@@ -172,7 +173,7 @@ def _cmd_inbox(args, store: Store) -> int:
         return 0
     color = term.color_enabled()
     for capture in inbox:
-        print(f"{term.dim(capture.id, enabled=color)}  {capture.text}")
+        print(f"{term.dim(short_id(capture.id), enabled=color)}  {capture.text}")
     return 0
 
 
@@ -214,7 +215,7 @@ def _cmd_area(args, store: Store) -> int:
             count = len(current.items_for_area(area))
             print(
                 f"  {i}) {term.swatch(area.color, enabled=color)} {area.name}"
-                f"  {term.dim(f'({count})', enabled=color)}  {term.dim(area.id, enabled=color)}"
+                f"  {term.dim(f'({count})', enabled=color)}  {term.dim(short_id(area.id), enabled=color)}"
             )
     return 0
 
@@ -236,7 +237,7 @@ def _cmd_objective(args, store: Store) -> int:
             area = amap.get(obj.area_id) if obj.area_id else None
             area_str = f"  {term.swatch(area.color, enabled=color)} {area.name}" if area else ""
             print(
-                f"{term.dim(obj.id, enabled=color)}  {obj.title}"
+                f"{term.dim(short_id(obj.id), enabled=color)}  {obj.title}"
                 f"  {term.dim(f'({advancing} advancing · {obj.status})', enabled=color)}{area_str}"
             )
     return 0

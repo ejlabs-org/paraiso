@@ -32,6 +32,7 @@ from .cli import main
 from .core import Paraiso
 from .errors import (
     AlreadyProcessedError,
+    AmbiguousIdError,
     AreaNotFoundError,
     CaptureNotFoundError,
     InvalidBucketError,
@@ -95,6 +96,7 @@ __all__ = [
     "AreaNotFoundError",
     "ObjectiveNotFoundError",
     "InvalidBucketError",
+    "AmbiguousIdError",
     "AlreadyProcessedError",
     "SpaceExistsError",
     "SpaceNotFoundError",

@@ -19,6 +19,7 @@ from . import palette
 from .classifier import Classifier, ManualClassifier, Suggestion
 from .errors import (
     AlreadyProcessedError,
+    AmbiguousIdError,
     AreaNotFoundError,
     CaptureNotFoundError,
     ItemNotFoundError,
@@ -32,6 +33,27 @@ from .util import from_iso, now, to_iso
 AreaRef = Union[Area, str, None]
 ObjectiveRef = Union[Objective, str, None]
 CaptureRef = Union[Capture, str]
+
+
+def _match_id(mapping: dict, ref: str) -> Optional[str]:
+    """Resolve ``ref`` to a full id in ``mapping``: an exact match, else a unique
+    prefix (git-style). Returns ``None`` when nothing matches; raises
+    :class:`AmbiguousIdError` when a prefix matches more than one id."""
+    if ref in mapping:
+        return ref
+    hits = [k for k in mapping if k.startswith(ref)]
+    if len(hits) == 1:
+        return hits[0]
+    if len(hits) > 1:
+        raise AmbiguousIdError(
+            f"Id {ref!r} matches {len(hits)} entities; use more characters."
+        )
+    return None
+
+
+def _show(ref) -> str:
+    """The id to name in an error message, whether given an entity or an id."""
+    return getattr(ref, "id", ref)
 
 
 class Paraiso:
@@ -343,18 +365,16 @@ class Paraiso:
         return self._resolve_item(item_id)
 
     def get_area(self, area_id: str) -> Area:
-        try:
-            return self._areas[area_id]
-        except KeyError:
-            raise AreaNotFoundError(f"No area with id {area_id!r}.") from None
+        aid = _match_id(self._areas, area_id)
+        if aid is None:
+            raise AreaNotFoundError(f"No area with id {area_id!r}.")
+        return self._areas[aid]
 
     def get_objective(self, objective_id: str) -> Objective:
-        try:
-            return self._objectives[objective_id]
-        except KeyError:
-            raise ObjectiveNotFoundError(
-                f"No objective with id {objective_id!r}."
-            ) from None
+        oid = _match_id(self._objectives, objective_id)
+        if oid is None:
+            raise ObjectiveNotFoundError(f"No objective with id {objective_id!r}.")
+        return self._objectives[oid]
 
     def summary(self) -> dict[str, Any]:
         """Counts for a quick overview (used by the CLI)."""
@@ -408,31 +428,29 @@ class Paraiso:
         self._tombstones[entity_id] = to_iso(now())
 
     def _resolve_capture(self, ref: CaptureRef) -> Capture:
-        cid = ref.id if isinstance(ref, Capture) else ref
-        try:
-            return self._captures[cid]
-        except KeyError:
-            raise CaptureNotFoundError(f"No capture with id {cid!r}.") from None
+        cid = ref.id if isinstance(ref, Capture) else _match_id(self._captures, ref)
+        if cid is None or cid not in self._captures:
+            raise CaptureNotFoundError(f"No capture with id {_show(ref)!r}.")
+        return self._captures[cid]
 
     def _resolve_item(self, ref: Union[Item, str]) -> Item:
-        iid = ref.id if isinstance(ref, Item) else ref
-        try:
-            return self._items[iid]
-        except KeyError:
-            raise ItemNotFoundError(f"No item with id {iid!r}.") from None
+        iid = ref.id if isinstance(ref, Item) else _match_id(self._items, ref)
+        if iid is None or iid not in self._items:
+            raise ItemNotFoundError(f"No item with id {_show(ref)!r}.")
+        return self._items[iid]
 
     def _area_id(self, ref: AreaRef) -> Optional[str]:
         if ref is None:
             return None
-        aid = ref.id if isinstance(ref, Area) else ref
-        if aid not in self._areas:
-            raise AreaNotFoundError(f"No area with id {aid!r}.")
+        aid = ref.id if isinstance(ref, Area) else _match_id(self._areas, ref)
+        if aid is None or aid not in self._areas:
+            raise AreaNotFoundError(f"No area with id {_show(ref)!r}.")
         return aid
 
     def _objective_id(self, ref: ObjectiveRef) -> Optional[str]:
         if ref is None:
             return None
-        oid = ref.id if isinstance(ref, Objective) else ref
-        if oid not in self._objectives:
-            raise ObjectiveNotFoundError(f"No objective with id {oid!r}.")
+        oid = ref.id if isinstance(ref, Objective) else _match_id(self._objectives, ref)
+        if oid is None or oid not in self._objectives:
+            raise ObjectiveNotFoundError(f"No objective with id {_show(ref)!r}.")
         return oid
