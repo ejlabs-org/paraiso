@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "paraiso"
-version = "0.8.0"
+version = "0.9.0"
 description = "An open, dependency-free foundation for the PARAISO organization framework."
 readme = "README.md"
 requires-python = ">=3.9"

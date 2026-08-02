@@ -5,7 +5,7 @@ from paraiso import Bucket, KeywordClassifier, ManualClassifier, Paraiso, Store
 
 
 def test_version() -> None:
-    assert paraiso.__version__ == "0.8.0"
+    assert paraiso.__version__ == "0.9.0"
 
 
 def test_framework_has_seven_pieces() -> None:
