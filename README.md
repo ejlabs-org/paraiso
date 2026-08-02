@@ -239,6 +239,11 @@ listings line up, and any command that takes an id accepts a **unique prefix**
 unambiguous. `tree` prints the workspace name in an `=====` banner above the
 buckets.
 
+**Browse.** Every browse view — `projects` / `resources` / `seeds` / `archive`
+and `tree` — lists items in the **same order: grouped by Area** (alphabetical by
+Area name, area-less items last), then by title, so the same thing reads the
+same way everywhere.
+
 **Color.** Areas are assigned distinct colors from a calm 7-hue palette (cycling
 as you add them); recolor any Area with `area edit`, which offers **only those
 predefined colors**, never a free-form hex. Buckets are color-coded too. Output

@@ -55,6 +55,17 @@ def _area_map(current: Paraiso) -> dict[str, Area]:
     return {a.id: a for a in current.areas}
 
 
+def _by_area(amap: dict[str, Area]):
+    """Shared Browse ordering: group items by Area name (area-less items last),
+    then by title. Used by every browse view so they read the same way."""
+    def key(item: Item):
+        area = amap.get(item.area_id) if item.area_id else None
+        if area is None:
+            return (1, "", item.title.lower())
+        return (0, area.name.lower(), item.title.lower())
+    return key
+
+
 def _fmt_item(item: Item, amap: dict[str, Area], color: bool, *, dot: bool = True) -> str:
     parts = []
     if dot:
@@ -278,7 +289,7 @@ def _cmd_items(args, store: Store) -> int:
         print("  Nothing here yet." if bucket else "No items match." )
         return 0
     amap = _area_map(current)
-    for item in sorted(items, key=lambda i: (i.bucket.value, i.title.lower())):
+    for item in sorted(items, key=_by_area(amap)):
         indent = "  " if bucket else ""
         # In a single-bucket view the header already shows the color.
         print(indent + _fmt_item(item, amap, color, dot=not bucket))
@@ -300,7 +311,7 @@ def _cmd_tree(args, store: Store) -> int:
         items = current.items_in(bucket)
         header = term.paint(f"{bucket.label} ({len(items)})", palette.BUCKET_COLORS[bucket.value], bold=True, enabled=color)
         print(header)
-        for item in sorted(items, key=lambda i: i.title.lower()):
+        for item in sorted(items, key=_by_area(amap)):
             area = amap.get(item.area_id) if item.area_id else None
             area_str = f"   {term.swatch(area.color, enabled=color)} {area.name}" if area else ""
             print(f"  {item.title}{area_str}")
