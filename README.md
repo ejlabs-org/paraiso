@@ -195,6 +195,7 @@ paraiso file cap_ab12 --bucket project --title "Book dentist"
 
 # Browse your PARAISO (color-coded in a real terminal)
 paraiso projects                  # also: resources, seeds, archive
+paraiso projects -a               # filter by Area — bare -a prompts; -a <id> is direct
 paraiso tree                      # a colorful overview of everything (clears the screen)
 paraiso show                      # quick counts
 
@@ -205,8 +206,8 @@ paraiso area show                 # explore one Area (its items by bucket + obje
 paraiso area edit                 # rename / recolor (from the palette) / retag
 paraiso objective                 # list Objectives (`objective add` creates)
 
-# Sort, reclassify, delete
-paraiso sort                      # guided: press one key per capture to file it
+# Sort, reclassify, delete  (ids accept any unique prefix, git-style)
+paraiso sort                      # guided: confirm title → pick Area → choose bucket
 paraiso move <item_id> project    # reclassify a filed item (add --area to re-home it)
 paraiso delete <item_id>          # delete an item (deleting an Area id keeps its items)
 
@@ -220,14 +221,23 @@ paraiso sync --path ~/Dropbox/paraiso.json
 ```
 
 **Guided sorting.** `paraiso sort` (or `sort` in the shell) walks the Inbox one
-capture at a time: press **p / r / s / a** to choose a bucket (a single keypress
-in a real terminal), pick an Area from a numbered list (or create one on the
-spot), and press Enter to accept the title. `move` and `delete` with no id drop
-you into a numbered picker, so you never have to type an id — guided `move` lets
-you change an item's bucket **and/or** its Area, choosing "keep" for whichever
-you want to leave alone. Deleting is the only destructive action and asks first
-(pass `--yes` to skip); deleting an **Area** keeps its items and just detaches
-them. `tree` prints the workspace name in an `=====` banner above the buckets.
+capture at a time, showing your progress (`2/5`). Each capture starts with a
+one-key action bar — **Enter** to file it, **s** to skip, **d** to discard,
+**Esc** to quit — then filing is three keypresses: **confirm the title**
+(Enter keeps it, `e` to edit), **pick an Area** (or create one on the spot),
+and **choose a bucket** (`p / r / s / a`). **Esc backs out** at every step:
+mid-filing it abandons that one capture and moves on; at the action bar it ends
+the sort. `move` and `delete` with no id drop you into a numbered picker, so you
+never have to type an id — guided `move` lets you change an item's bucket
+**and/or** its Area, choosing "keep" for whichever you want to leave alone.
+Deleting is the only destructive action and asks first (pass `--yes` to skip);
+deleting an **Area** keeps its items and just detaches them.
+
+**Ids.** Every id shows at a consistent short width (`itm_` + 8 chars) so
+listings line up, and any command that takes an id accepts a **unique prefix**
+(git-style) — `paraiso delete itm_e24af0cd` resolves as long as it's
+unambiguous. `tree` prints the workspace name in an `=====` banner above the
+buckets.
 
 **Color.** Areas are assigned distinct colors from a calm 7-hue palette (cycling
 as you add them); recolor any Area with `area edit`, which offers **only those
@@ -255,18 +265,20 @@ paraiso › new personal
 paraiso (personal) › capture buy mulch
 paraiso (personal) › file <Tab>                    # completes capture ids
 paraiso (personal) › file cap_03dc --bucket <Tab>  # → project resource seed archive
-paraiso (personal) › sort                          # guided: one keypress per capture
+paraiso (personal) › sort                          # guided: title → area → bucket
 ```
 
 The prompt is colored per workspace (each name gets a stable palette color), and
-`help` lists commands grouped by category (Workspaces, Capture, Sort, Browse,
-Organize, Data, Info); `help <command>` explains one. It runs the exact same
-commands as the one-shot CLI — including `sync` — so anything you can script,
-you can also do interactively.
+`help` (or `?`) clears the screen and lists commands grouped by category
+(Workspaces, Capture, Sort, Browse, Organize, Data, Info); `help <command>`
+explains one. Guided flows (`sort`, `move`, `delete`, `area edit`) are
+keypress-first and cancel with **Esc**. It runs the exact same commands as the
+one-shot CLI — including `sync` — so anything you can script, you can also do
+interactively.
 
 ## Status
 
-`0.8.0` — early but usable. The public API (models, `Paraiso`, `Store`,
+`0.9.0` — early but usable. The public API (models, `Paraiso`, `Store`,
 `Classifier`, sync) is settling; expect additions before `1.0`.
 
 ## Related

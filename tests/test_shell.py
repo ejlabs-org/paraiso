@@ -40,6 +40,29 @@ def test_welcome_banner_shows_wordmark_and_status(shell):
     assert "workspace" in shell._welcome_banner()
 
 
+def test_help_clears_screen_on_a_tty(shell, monkeypatch):
+    import io
+
+    buf = io.StringIO()
+    shell.stdout = buf
+    monkeypatch.setattr("sys.stdout.isatty", lambda: True)
+    shell.onecmd("help")
+    out = buf.getvalue()
+    assert "\033[2J" in out          # screen cleared
+    assert "Workspaces" in out       # then the categorized help
+
+
+def test_help_does_not_clear_when_not_a_tty(shell):
+    import io
+
+    buf = io.StringIO()
+    shell.stdout = buf
+    shell.onecmd("help")
+    out = buf.getvalue()
+    assert "\033[2J" not in out      # piped/CI: no escape codes
+    assert "Workspaces" in out
+
+
 def test_quit_returns_true(shell):
     assert shell.onecmd("quit") is True
     assert shell.onecmd("EOF") is True
@@ -108,10 +131,11 @@ def test_triage_flow_files_and_discards(tmp_path, monkeypatch):
     current.capture("random noise")
     store.save(current)
 
-    # First capture → project; second → discard.
-    keys = iter(["p", "d"])
+    # Capture 1: file it (Enter action → keep title → area none → bucket p).
+    # Capture 2: discard (d at the action bar).
+    keys = iter(["", "", "p", "d"])
     monkeypatch.setattr(interactive, "read_key", lambda prompt="": next(keys))
-    # No areas exist, so choose_area asks for a name; blank = none. Title blank = default.
+    # No areas exist, so choose_area asks for a name; blank = none.
     monkeypatch.setattr("builtins.input", lambda prompt="": "")
 
     interactive.triage(store, color=False)
@@ -121,6 +145,40 @@ def test_triage_flow_files_and_discards(tmp_path, monkeypatch):
     projects = result.items_in("project")
     assert len(projects) == 1
     assert projects[0].title == "redo the website"
+
+
+def test_triage_esc_at_action_bar_quits(tmp_path, monkeypatch):
+    from paraiso import interactive
+
+    store = Store(base_dir=tmp_path)
+    store.create("t")
+    current = store.current()
+    current.capture("one")
+    current.capture("two")
+    store.save(current)
+
+    monkeypatch.setattr(interactive, "read_key", lambda prompt="": "esc")
+    interactive.triage(store, color=False)
+
+    assert len(store.current().inbox) == 2  # Esc quit before filing anything
+
+
+def test_triage_esc_mid_filing_skips_capture(tmp_path, monkeypatch):
+    from paraiso import interactive
+
+    store = Store(base_dir=tmp_path)
+    store.create("t")
+    current = store.current()
+    current.capture("only one")
+    store.save(current)
+
+    # Enter to start filing, then Esc at the title step → skip this capture.
+    keys = iter(["", "esc"])
+    monkeypatch.setattr(interactive, "read_key", lambda prompt="": next(keys))
+    interactive.triage(store, color=False)
+
+    assert len(store.current().inbox) == 1  # still unsorted
+    assert store.current().items == []
 
 
 def test_move_flow_changes_bucket_but_keeps_area(tmp_path, monkeypatch):
@@ -134,10 +192,10 @@ def test_move_flow_changes_bucket_but_keeps_area(tmp_path, monkeypatch):
     current.file(c, "seed", title="Website", area=area)
     store.save(current)
 
-    # pick item 1; bucket 'p' (project); area 'k' (keep current)
-    monkeypatch.setattr(interactive, "read_key", lambda prompt="": "p")
-    inputs = iter(["1", "k"])
-    monkeypatch.setattr("builtins.input", lambda prompt="": next(inputs))
+    # pick item 1 (typed); bucket 'p' (project); area 'k' (keep current, keypress)
+    keys = iter(["p", "k"])
+    monkeypatch.setattr(interactive, "read_key", lambda prompt="": next(keys))
+    monkeypatch.setattr("builtins.input", lambda prompt="": "1")
 
     interactive.move_flow(store, color=False)
 

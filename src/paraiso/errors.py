@@ -35,6 +35,10 @@ class InvalidBucketError(ParaisoError):
     """A value could not be interpreted as a PARAISO bucket."""
 
 
+class AmbiguousIdError(ParaisoError):
+    """An id prefix matched more than one entity; be more specific."""
+
+
 class AlreadyProcessedError(ParaisoError):
     """A capture has already been filed or discarded."""
 

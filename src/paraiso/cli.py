@@ -28,6 +28,11 @@ from .errors import ParaisoError
 from .framework import Bucket
 from .models import Area, Item
 from .store import Store
+from .util import short_id
+
+
+# Sentinel: `-a` given with no value means "prompt me for an Area".
+_PROMPT_AREA = "\x00prompt-area"
 
 
 def _tags(value: Optional[str]) -> list[str]:
@@ -54,7 +59,7 @@ def _fmt_item(item: Item, amap: dict[str, Area], color: bool, *, dot: bool = Tru
     parts = []
     if dot:
         parts.append(term.paint("●", palette.BUCKET_COLORS[item.bucket.value], enabled=color))
-    parts.append(term.dim(item.id, enabled=color))
+    parts.append(term.dim(short_id(item.id), enabled=color))
     parts.append(item.title)
     area = amap.get(item.area_id) if item.area_id else None
     if area is not None:
@@ -172,7 +177,7 @@ def _cmd_inbox(args, store: Store) -> int:
         return 0
     color = term.color_enabled()
     for capture in inbox:
-        print(f"{term.dim(capture.id, enabled=color)}  {capture.text}")
+        print(f"{term.dim(short_id(capture.id), enabled=color)}  {capture.text}")
     return 0
 
 
@@ -214,7 +219,7 @@ def _cmd_area(args, store: Store) -> int:
             count = len(current.items_for_area(area))
             print(
                 f"  {i}) {term.swatch(area.color, enabled=color)} {area.name}"
-                f"  {term.dim(f'({count})', enabled=color)}  {term.dim(area.id, enabled=color)}"
+                f"  {term.dim(f'({count})', enabled=color)}  {term.dim(short_id(area.id), enabled=color)}"
             )
     return 0
 
@@ -236,7 +241,7 @@ def _cmd_objective(args, store: Store) -> int:
             area = amap.get(obj.area_id) if obj.area_id else None
             area_str = f"  {term.swatch(area.color, enabled=color)} {area.name}" if area else ""
             print(
-                f"{term.dim(obj.id, enabled=color)}  {obj.title}"
+                f"{term.dim(short_id(obj.id), enabled=color)}  {obj.title}"
                 f"  {term.dim(f'({advancing} advancing · {obj.status})', enabled=color)}{area_str}"
             )
     return 0
@@ -250,6 +255,13 @@ def _cmd_items(args, store: Store) -> int:
     bucket = getattr(args, "bucket", None)
     area = getattr(args, "area", None)
     objective = getattr(args, "objective", None)
+
+    # Bare `-a` → prompt for an Area (or "all"); a value → resolve id/prefix.
+    if area == _PROMPT_AREA:
+        label = Bucket.coerce(bucket).label if bucket else "items"
+        area = interactive.pick_area_or_all(current, color, f"Show {label} in which Area?")
+    if area:
+        area = current.get_area(area).id  # resolve id/prefix (raises if unknown)
 
     items = current.items
     if bucket:
@@ -530,16 +542,20 @@ def build_parser() -> argparse.ArgumentParser:
     obj_sub.add_parser("list")
     p_obj.set_defaults(func=_cmd_objective, objective_action="list")
 
-    # Per-bucket browse shortcuts (the PARAISO pages).
+    # Per-bucket browse shortcuts (the PARAISO pages). `-a` filters by Area:
+    # bare `-a` prompts a picker; `-a <id-or-prefix>` filters directly.
     for _slug, _bucket in (
         ("projects", "project"),
         ("resources", "resource"),
         ("seeds", "seed"),
         ("archive", "archive"),
     ):
-        sub.add_parser(_slug, help=f"list items in {_bucket.title()}").set_defaults(
-            func=_cmd_items, bucket=_bucket, area=None, objective=None
+        p_bucket = sub.add_parser(_slug, help=f"list items in {_bucket.title()} (-a filters by Area)")
+        p_bucket.add_argument(
+            "-a", "--area", nargs="?", const=_PROMPT_AREA, default=None,
+            help="area id/prefix to filter by, or bare -a to pick one",
         )
+        p_bucket.set_defaults(func=_cmd_items, bucket=_bucket, objective=None)
 
     sub.add_parser("show", help="quick counts for the active workspace").set_defaults(func=_cmd_show)
     sub.add_parser("tree", help="colorful overview of everything").set_defaults(func=_cmd_tree)
