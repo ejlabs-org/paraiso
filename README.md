@@ -8,7 +8,7 @@
 An open, dependency-free Python foundation for the **PARAISO** organization
 framework: one calm home for everything on your mind.
 
-PARAISO extends Tiago Forte's [PARA method](https://fortelabs.com/blog/para/)
+[PARAISO](https://www.chiefly.io/paraiso) extends Tiago Forte's [PARA method](https://fortelabs.com/blog/para/)
 (Projects, Areas, Resources, Archive) with three additions — an **Inbox** for
 raw capture, **Seeds** for not-yet ideas, and **Objectives** for direction:
 
