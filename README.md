@@ -1,5 +1,6 @@
 # paraiso
 
+[![CI](https://github.com/ejlabs-org/paraiso/actions/workflows/ci.yml/badge.svg)](https://github.com/ejlabs-org/paraiso/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/paraiso.svg)](https://pypi.org/project/paraiso/)
 [![Python versions](https://img.shields.io/pypi/pyversions/paraiso.svg)](https://pypi.org/project/paraiso/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -284,7 +285,15 @@ interactively.
 ## Status
 
 `0.9.0` — early but usable. The public API (models, `Paraiso`, `Store`,
-`Classifier`, sync) is settling; expect additions before `1.0`.
+`Classifier`, sync) is settling; expect additions before `1.0`. Release notes
+live in [CHANGELOG.md](CHANGELOG.md).
+
+## Contributing
+
+Contributions that keep paraiso small, calm, and dependency-free are welcome.
+`pip install -e ".[dev]"`, then `pytest` and `ruff check src/paraiso` — CI runs
+both across Python 3.9–3.13. See [CONTRIBUTING.md](CONTRIBUTING.md) for the dev
+setup and the invariants to preserve.
 
 ## Related
 

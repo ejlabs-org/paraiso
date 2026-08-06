@@ -34,6 +34,16 @@ classifiers = [
   "Topic :: Text Processing",
 ]
 
+[project.optional-dependencies]
+# Tooling for contributors: `pip install -e ".[dev]"`. Kept out of the runtime
+# install — paraiso itself stays dependency-free.
+dev = [
+  "pytest>=7",
+  "ruff>=0.6,<0.17",
+  "build>=1",
+  "twine>=4",
+]
+
 [project.urls]
 Homepage = "https://github.com/ejlabs-org/paraiso"
 Repository = "https://github.com/ejlabs-org/paraiso"
@@ -52,3 +62,14 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+# Target the floor so lint reflects what actually runs on 3.9.
+target-version = "py39"
+line-length = 100
+
+[tool.ruff.lint]
+# pyflakes (F) + real pycodestyle checks (E4/E7/E9) + bugbear (B). Deliberately
+# NO `UP` (pyupgrade): it would push `X | None` / `X | Y`, which break the 3.9
+# floor — paraiso uses typing.Optional/Union at runtime on purpose.
+select = ["E4", "E7", "E9", "F", "B"]
