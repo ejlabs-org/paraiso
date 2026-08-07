@@ -15,6 +15,10 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - **Consistent short ids**: ids display at a fixed width (`prefix_` + 8 chars)
   so listings align, and any command that takes an id accepts a **unique
   prefix** (git-style). Ambiguous prefixes raise `AmbiguousIdError`.
+- **Edit filed items**: `item` lists everything (grouped by Area),
+  `item show <id>` opens a full detail page, and `item edit <id>` is a guided
+  editor for title / summary / content / tags — content opens in `$EDITOR`.
+  Core adds `Paraiso.update_item(...)`.
 - `help` / `?` clears the screen on a real terminal, like `tree`.
 
 ### Changed
@@ -44,6 +48,6 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 Earlier history predates this changelog — see the git log for details.
 
-[0.9.0]: https://github.com/ejlabs-org/paraiso
-[0.8.0]: https://github.com/ejlabs-org/paraiso
-[0.7.0]: https://github.com/ejlabs-org/paraiso
+[0.9.0]: https://github.com/ejlabs-org/paraiso/compare/v0.8.0...main
+[0.8.0]: https://github.com/ejlabs-org/paraiso/compare/v0.7.0...v0.8.0
+[0.7.0]: https://github.com/ejlabs-org/paraiso/releases/tag/v0.7.0
