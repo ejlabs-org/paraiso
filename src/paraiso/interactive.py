@@ -11,14 +11,19 @@ and titles are read as lines so they work anywhere, including when stdin is pipe
 
 from __future__ import annotations
 
+import os
 import select
+import shlex
+import subprocess
 import sys
+import tempfile
 from typing import Optional
 
 from . import palette, term
 from .core import Paraiso
 from .models import Area, Item
 from .store import Store
+from .util import short_id
 
 try:  # single-keypress support (POSIX only)
     import termios
@@ -285,6 +290,28 @@ def _clear_if_tty() -> None:
         sys.stdout.write("\033[2J\033[H")
 
 
+def edit_in_editor(initial_text: str, *, suffix: str = ".md") -> str:
+    """Edit ``initial_text`` in ``$VISUAL``/``$EDITOR`` (via a temp file) and
+    return the result. Falls back to a single typed line — blank keeps the
+    original — when there's no terminal or no editor configured (which is also
+    how tests drive it)."""
+    editor = os.environ.get("VISUAL") or os.environ.get("EDITOR")
+    if not (editor and sys.stdin.isatty() and sys.stdout.isatty()):
+        typed = input("  content (blank keeps current) › ").strip()
+        return typed or initial_text
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=suffix, delete=False, encoding="utf-8"
+    ) as tf:
+        tf.write(initial_text)
+        path = tf.name
+    try:
+        subprocess.call(shlex.split(editor) + [path])
+        with open(path, encoding="utf-8") as fh:
+            return fh.read().rstrip("\n")
+    finally:
+        os.unlink(path)
+
+
 # -- flows -----------------------------------------------------------------
 
 
@@ -425,6 +452,57 @@ def edit_area_flow(store: Store, *, color: Optional[bool] = None, area_id: Optio
             current.update_area(area, tags=[t.strip() for t in raw.split(",") if t.strip()])
     store.save(current)
     print(f"Updated Area {term.swatch(area.color, enabled=color)} {area.name}.")
+    return 0
+
+
+def edit_item_flow(store: Store, *, color: Optional[bool] = None, item_id: Optional[str] = None) -> int:
+    """Edit a filed item's text fields: title, summary, content (in $EDITOR),
+    or tags. Keypress-first; Esc cancels. Bucket/Area live in `move`."""
+    current = store.current()
+    if current is None:
+        print("No active workspace.")
+        return 0
+    color = term.color_enabled() if color is None else color
+    item = current.get_item(item_id) if item_id else pick_item(current, color, "Edit which item?")
+    if item is None:
+        print("Cancelled.")
+        return 0
+    amap = {a.id: a for a in current.areas}
+    while True:
+        area = amap.get(item.area_id)
+        meta = item.bucket.label + (f" · {area.name}" if area else "")
+        tagstr = (
+            f"   {term.dim(' '.join('#' + t for t in item.tags), enabled=color)}"
+            if item.tags
+            else ""
+        )
+        print(
+            f"\n  {term.paint('● ' + item.title, palette.BUCKET_COLORS[item.bucket.value], bold=True, enabled=color)}"
+            f"   {term.dim(short_id(item.id), enabled=color)}   {term.dim(meta, enabled=color)}{tagstr}"
+        )
+        print(
+            "  "
+            + term.dim(
+                "[t] title   [s] summary   [c] content   [g] tags   [Enter] done   [Esc] cancel",
+                enabled=color,
+            )
+        )
+        key = read_key("  edit › ")
+        if key in ("", "q", "esc"):
+            break
+        if key == "t":
+            name = input("  new title › ").strip()
+            if name:
+                current.update_item(item, title=name)
+        elif key == "s":
+            current.update_item(item, summary=input("  summary › ").strip())
+        elif key == "c":
+            current.update_item(item, content=edit_in_editor(item.content))
+        elif key == "g":
+            raw = input("  tags (comma-separated) › ").strip()
+            current.update_item(item, tags=[t.strip() for t in raw.split(",") if t.strip()])
+    store.save(current)
+    print(f"Updated '{item.title}'.")
     return 0
 
 

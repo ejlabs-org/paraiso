@@ -198,6 +198,9 @@ paraiso projects                  # also: resources, seeds, archive
 paraiso projects -a               # filter by Area — bare -a prompts; -a <id> is direct
 paraiso tree                      # a colorful overview of everything (clears the screen)
 paraiso show                      # quick counts
+paraiso item                      # list every item (grouped by Area)
+paraiso item show <id>            # full detail page for one item
+paraiso item edit <id>            # edit title / summary / content ($EDITOR) / tags
 
 # Areas & objectives (bare noun lists; add/show/edit)
 paraiso area                      # list Areas (numbered, with counts)
@@ -243,6 +246,12 @@ buckets.
 and `tree` — lists items in the **same order: grouped by Area** (alphabetical by
 Area name, area-less items last), then by title, so the same thing reads the
 same way everywhere.
+
+**Items.** `item` lists everything in one Area-grouped view; `item show <id>`
+opens a full detail page (bucket, Area, Objective, tags, and the complete
+content). `item edit <id>` is a guided, keypress-first editor for an item's
+**title / summary / content / tags** — content opens in your `$EDITOR` for real
+multi-line editing (Esc cancels; bucket and Area are changed with `move`).
 
 **Color.** Areas are assigned distinct colors from a calm 7-hue palette (cycling
 as you add them); recolor any Area with `area edit`, which offers **only those

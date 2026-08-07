@@ -31,7 +31,7 @@ _HELP_CATEGORIES = (
     ("Workspaces", ("spaces", "new", "use", "rename")),
     ("Capture", ("capture", "inbox")),
     ("Sort", ("sort", "file", "move", "delete")),
-    ("Browse", ("tree", "show", "projects", "resources", "seeds", "archive")),
+    ("Browse", ("tree", "show", "item", "projects", "resources", "seeds", "archive")),
     ("Organize", ("area", "objective")),
     ("Data", ("import", "export", "backup", "restore", "sync")),
     ("Info", ("framework", "help", "quit")),
@@ -182,6 +182,10 @@ class ParaisoShell(cmd.Cmd):
         "objective — list Objectives. `objective add TITLE [--area A]` creates one."
         self._dispatch("objective", arg)
 
+    def do_item(self, arg: str) -> None:
+        "item — list items. Also: `item show [id]`, `item edit [id]`."
+        self._dispatch("item", arg)
+
     def do_projects(self, arg: str) -> None:
         "List items in Projects."
         self._dispatch("projects", arg)
@@ -289,6 +293,16 @@ class ParaisoShell(cmd.Cmd):
 
     def complete_objective(self, text, line, begidx, endidx):
         return [s for s in ("add", "list") if s.startswith(text)]
+
+    def complete_item(self, text, line, begidx, endidx):
+        preceding = line[:begidx].split()
+        if len(preceding) <= 1:
+            return [s for s in ("show", "edit", "list") if s.startswith(text)]
+        if len(preceding) == 2 and preceding[1] in ("show", "edit"):
+            current = self.store.current()
+            ids = [i.id for i in current.items] if current else []
+            return [i for i in ids if i.startswith(text)]
+        return []
 
     def complete_move(self, text, line, begidx, endidx):
         current = self.store.current()

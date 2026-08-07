@@ -121,6 +121,56 @@ def _area_detail(current: Paraiso, area: Area, color: bool) -> None:
         print(term.dim("  Nothing filed here yet.", enabled=color))
 
 
+def _item_detail(current: Paraiso, item: Item, color: bool) -> None:
+    """A single item's page: its ids, bucket, Area, Objective, tags, and content."""
+    _clear_if_tty()
+    print(term.paint(f"● {item.title}", palette.BUCKET_COLORS[item.bucket.value], bold=True, enabled=color))
+    print(f"  {term.dim(short_id(item.id), enabled=color)}   {item.bucket.label}")
+    if item.area_id:
+        area = current.get_area(item.area_id)
+        print(f"  Area: {term.swatch(area.color, enabled=color)} {area.name}")
+    if item.objective_id:
+        print(f"  Objective: {current.get_objective(item.objective_id).title}")
+    if item.tags:
+        print("  " + term.dim(" ".join(f"#{t}" for t in item.tags), enabled=color))
+    if item.summary:
+        print("\n  " + item.summary)
+    if item.content:
+        print("\n" + item.content)
+    print(
+        "\n"
+        + term.dim(
+            f"  created {item.created_at:%Y-%m-%d %H:%M} · updated {item.updated_at:%Y-%m-%d %H:%M}",
+            enabled=color,
+        )
+    )
+
+
+def _cmd_item(args, store: Store) -> int:
+    """List all items (grouped by Area), or show / edit one."""
+    current = _require_current(store)
+    color = term.color_enabled()
+    action = getattr(args, "item_action", "list")
+    if action == "show":
+        item_id = getattr(args, "id", None)
+        item = current.get_item(item_id) if item_id else interactive.pick_item(
+            current, color, "Show which item?"
+        )
+        if item is not None:
+            _item_detail(current, item, color)
+    elif action == "edit":
+        return interactive.edit_item_flow(store, item_id=getattr(args, "id", None))
+    else:  # list — every item, grouped by Area
+        items = current.items
+        if not items:
+            print("No items yet.")
+            return 0
+        amap = _area_map(current)
+        for item in sorted(items, key=_by_area(amap)):
+            print(_fmt_item(item, amap, color))
+    return 0
+
+
 def _cmd_framework(args, store: Store) -> int:
     color = term.color_enabled()
     if not color:
@@ -482,7 +532,8 @@ _EPILOG = """commands, by category:
   workspaces   spaces  new  use  rename
   capture      capture  inbox
   sort         sort  file  move  delete
-  browse       tree  show  projects  resources  seeds  archive
+  browse       tree  show  item  projects  resources  seeds  archive
+  item         item  item show <id>  item edit <id>
   organize     area  objective       (bare = list; `add`/`show`/`edit` too)
   data         import  export  backup  restore  sync
   info         framework  shell
@@ -567,6 +618,15 @@ def build_parser() -> argparse.ArgumentParser:
             help="area id/prefix to filter by, or bare -a to pick one",
         )
         p_bucket.set_defaults(func=_cmd_items, bucket=_bucket, objective=None)
+
+    p_item = sub.add_parser("item", help="list items (also: show / edit an item)")
+    item_sub = p_item.add_subparsers(dest="item_action")
+    i_show = item_sub.add_parser("show")
+    i_show.add_argument("id", nargs="?")
+    i_edit = item_sub.add_parser("edit")
+    i_edit.add_argument("id", nargs="?")
+    item_sub.add_parser("list")
+    p_item.set_defaults(func=_cmd_item, item_action="list")
 
     sub.add_parser("show", help="quick counts for the active workspace").set_defaults(func=_cmd_show)
     sub.add_parser("tree", help="colorful overview of everything").set_defaults(func=_cmd_tree)
