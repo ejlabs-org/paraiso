@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 (with the usual `0.x` latitude — anything may still change before `1.0`).
 
-## [0.9.0] — Unreleased
+## [0.10.0] — 2026-08-07
 
 ### Added
 - **Per-area bucket views**: `projects` / `resources` / `seeds` / `archive`
@@ -32,6 +32,13 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - **Browse views share one order**: `projects` / `resources` / `seeds` /
   `archive` and `tree` all group items by Area (then title), consistently.
 
+## [0.9.0] — Superseded
+
+An early `0.9.0` reached PyPI with only part of the changes now listed under
+`0.10.0` (it predates the browse-by-Area grouping and item editing). Because
+PyPI versions are immutable, the complete release ships as `0.10.0` — please
+use that.
+
 ## [0.8.0] — 2026-07-31
 
 ### Added
@@ -48,6 +55,6 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 Earlier history predates this changelog — see the git log for details.
 
-[0.9.0]: https://github.com/ejlabs-org/paraiso/compare/v0.8.0...main
+[0.10.0]: https://github.com/ejlabs-org/paraiso/compare/v0.8.0...v0.10.0
 [0.8.0]: https://github.com/ejlabs-org/paraiso/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/ejlabs-org/paraiso/releases/tag/v0.7.0
