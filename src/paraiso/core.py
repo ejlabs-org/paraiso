@@ -218,6 +218,31 @@ class Paraiso:
         self._touch()
         return it
 
+    def update_item(
+        self,
+        item: Union[Item, str],
+        *,
+        title: Optional[str] = None,
+        summary: Optional[str] = None,
+        content: Optional[str] = None,
+        tags: Optional[list] = None,
+    ) -> Item:
+        """Edit a filed item's text fields. Only the arguments you pass are
+        changed; the rest are left as-is. Bucket and Area have their own methods
+        (:meth:`move`, :meth:`set_item_area`)."""
+        it = self._resolve_item(item)
+        if title is not None:
+            it.title = title
+        if summary is not None:
+            it.summary = summary
+        if content is not None:
+            it.content = content
+        if tags is not None:
+            it.tags = list(tags)
+        it.updated_at = now()
+        self._touch()
+        return it
+
     # -- Deleting ----------------------------------------------------------
 
     def delete_item(self, item: Union[Item, str]) -> None:
