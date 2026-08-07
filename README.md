@@ -293,7 +293,7 @@ interactively.
 
 ## Status
 
-`0.9.0` — early but usable. The public API (models, `Paraiso`, `Store`,
+`0.10.0` — early but usable. The public API (models, `Paraiso`, `Store`,
 `Classifier`, sync) is settling; expect additions before `1.0`. Release notes
 live in [CHANGELOG.md](CHANGELOG.md).
 
