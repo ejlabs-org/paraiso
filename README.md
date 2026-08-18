@@ -6,22 +6,44 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen.svg)](pyproject.toml)
 
+```
+   █████  ███  █████  ███  █████ █████ █████
+   █   █ █   █ █   █ █   █   █   █     █   █
+   █████ █████ ████  █████   █   █████ █   █
+   █     █   █ █  █  █   █   █       █ █   █
+   █     █   █ █   █ █   █ █████ █████ █████
+
+        one calm home for everything on your mind
+```
+
+<p align="center">
+  <img
+    src="https://raw.githubusercontent.com/ejlabs-org/paraiso/main/assets/demo.gif"
+    alt="The paraiso interactive shell: capturing three thoughts, sorting them into buckets with the interactive picker, and viewing the tree"
+    width="820">
+</p>
+
+<p align="center"><em>Capture, sort, and see everything in its place — all in the terminal.</em></p>
+
 An open, dependency-free Python foundation for the **PARAISO** organization
-framework: one calm home for everything on your mind.
+framework.
 
 [PARAISO](https://www.chiefly.io/paraiso) extends Tiago Forte's [PARA method](https://fortelabs.com/blog/para/)
 (Projects, Areas, Resources, Archive) with three additions — an **Inbox** for
 raw capture, **Seeds** for not-yet ideas, and **Objectives** for direction:
 
-```
-P  Projects    Things with a finish line.
-A  Areas       Ongoing parts of life you maintain.
-R  Resources   Reference you might want later.
-A  Archive     Done or dormant, and still findable.
-I  Inbox       Where every raw capture lands first.
-S  Seeds       Ideas you let grow, with no pressure.
-O  Objectives  The direction you're moving toward.
-```
+| &nbsp; | &nbsp; |
+|---|---|
+| 🟧 &nbsp;**P**rojects | Things with a finish line. |
+| 🟨 &nbsp;**A**reas | Ongoing parts of life you maintain. |
+| 🟩 &nbsp;**R**esources | Reference you might want later. |
+| 🟦 &nbsp;**A**rchive | Done or dormant, and still findable. |
+| 🟪 &nbsp;**I**nbox | Where every raw capture lands first. |
+| 🟥 &nbsp;**S**eeds | Ideas you let grow, with no pressure. |
+| 🟫 &nbsp;**O**bjectives | The direction you're moving toward. |
+
+> One calm, distinct hue per piece — the same idea PARAISO uses to color your
+> terminal.
 
 This package is **not tied to any app**. It's a shared, framework-first base
 other tools can build on. Two principles are baked in:
