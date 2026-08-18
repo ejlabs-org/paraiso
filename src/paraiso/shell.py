@@ -87,6 +87,9 @@ class ParaisoShell(cmd.Cmd):
             term.paint(piece.letter, hexc, bold=True, enabled=color)
             for piece, hexc in zip(framework.PIECES, palette.PIECE_COLORS)
         )
+        dots = "   ".join(
+            term.paint("●", hexc, enabled=color) for hexc in palette.PIECE_COLORS
+        )
         name = self.store.active()
         if name:
             status = term.dim("workspace  ", enabled=color) + term.paint(
@@ -108,6 +111,7 @@ class ParaisoShell(cmd.Cmd):
                 "",
                 "",
                 pad + wordmark,
+                pad + dots,
                 "",
                 pad + term.dim("one calm home for everything on your mind.", enabled=color),
                 "",
