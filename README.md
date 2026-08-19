@@ -6,16 +6,8 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen.svg)](pyproject.toml)
 
+![cli](./assets/cli.png)
 
-
-<p align="center">
-  <img
-    src="https://raw.githubusercontent.com/ejlabs-org/paraiso/main/assets/demo.gif"
-    alt="The paraiso interactive shell: capturing three thoughts, sorting them into buckets with the interactive picker, and viewing the tree"
-    width="820">
-</p>
-
-<p align="center"><em>Capture, sort, and see everything in its place — all in the terminal.</em></p>
 
 An open, dependency-free Python foundation for the **PARAISO** organization
 framework.
@@ -57,6 +49,17 @@ other tools can build on. Two principles are baked in:
   edits, *and* deletions all propagate — with no cloud lock-in.
 - **Bring-your-own AI.** An optional classifier seam; the core never calls a
   model.
+
+<p align="center">
+  <img
+    src="https://raw.githubusercontent.com/ejlabs-org/paraiso/main/assets/demo.gif"
+    alt="The paraiso interactive shell: capturing three thoughts, sorting them into buckets with the interactive picker, and viewing the tree"
+    width="820">
+</p>
+
+<p align="center"><em>Capture, sort, and see everything in its place — all in the terminal.</em></p>
+
+
 
 ## Install
 
