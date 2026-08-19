@@ -26,7 +26,7 @@ raw capture, **Seeds** for not-yet ideas, and **Objectives** for direction:
 | 🟥 &nbsp;**S**eeds | Ideas you let grow, with no pressure. |
 | 🟫 &nbsp;**O**bjectives | The direction you're moving toward. |
 
-> One calm, distinct hue per piece — the same idea PARAISO uses to color your
+> One calm, distinct hue per piece , the same idea PARAISO uses to color your
 > terminal.
 
 This package is **not tied to any app**. It's a shared, framework-first base
@@ -57,7 +57,7 @@ other tools can build on. Two principles are baked in:
     width="820">
 </p>
 
-<p align="center"><em>Capture, sort, and see everything in its place — all in the terminal.</em></p>
+<p align="center"><em>Capture, sort, and see everything in its place, all in the terminal.</em></p>
 
 
 
