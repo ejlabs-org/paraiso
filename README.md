@@ -6,15 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen.svg)](pyproject.toml)
 
-```
-   █████  ███  █████  ███  █████ █████ █████
-   █   █ █   █ █   █ █   █   █   █     █   █
-   █████ █████ ████  █████   █   █████ █   █
-   █     █   █ █  █  █   █   █       █ █   █
-   █     █   █ █   █ █   █ █████ █████ █████
 
-        one calm home for everything on your mind
-```
 
 <p align="center">
   <img
